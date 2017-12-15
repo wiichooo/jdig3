@@ -1,0 +1,171 @@
+
+Jdigitador
+
+Caracteristicas
+
+LOGIN
+	Interfaz a travez de la cual el digitador ingresara su usuario y contraseña para poder iniciar sesion.
+	Verificaciones:
+		Al momento de que un digitador desee ingresar a la aplicacion estar realizara una serie de verificaciones las cuales se detallan a 
+		continuación.
+		Servidores:
+			Archivos: Verifiaca la conexión con el servidor de archivos. (FTP/SFTP)
+			Base de datos de información (MySQL): Verifica la conexión con el servidor que contiene la informacion del digitador y de los paquetes,
+											hogares y cuestionarios.
+			Base de datos de digitación (MongoDB): Verifica la conexión con el servidor en el cual se guardara la información de los paquetes cuando
+													estos terminan el proceso de digitación.
+		Recursos:
+			CSPro: Verifica que CSPro se encuentre instalado en la computadora, y mas especifamente verifica la existencia del archivo 'runpff.exe'
+					el cual se utiliza para iniciar la digitacion de un paquete en CSPro.
+			Archivos: Verifica que los archivos XML de los cuestionarios existan en las carpetas indicadas en el area de Propiedades.
+			Carpetas: Verifica la existencia del siguiente arbol de direcciones:
+						C:/PAQUETES/
+								   /DICCIONARIO/
+								   /PRIMERA DIGITACION/
+								   /SEGUNDA DIGITACION/
+								   /VERIFICACION/
+		Información:
+			Luego de verificar el correcto funcionamiento de los servidores y la existencia de los recursos, se proecede a verificar la información
+			del digitador para velidar que este autorizado para ingresar al sistema.
+			Verificaciones:
+				Usuario
+				Contraseña
+				Grupo
+				Sesión
+	
+	Luego de cumplir con las verificaciones anteriores el usuario ingresa a la interfaz principal.
+	
+
+PROPIEDADES
+	Interfaz a la cual solamente puede ingresar el administrador, y es donde se puden configurar las variables generales de la aplicación. 
+	Archivos Locales:
+		Ubicación de programa CSPRO
+		Ubicaioón de archivos digitados locales
+	Servidor de archivos:
+		Tipo
+		Ubicación
+		Usuario
+		Contraseña
+	Base de datos de información:
+		Servidor
+		Puerto
+		Nombre
+		Usuario
+		Contraseña
+	Base de datos de digitación:
+		Servidor
+		Nombre
+		Usuario
+		Contraseña
+	Diccionario XML
+		Cuestioario
+		Otros
+	Abrir archivo de Configuración
+
+INICIO (PRINCIPAL)
+	Interfaz principal en la cual el digitador puede ver la siguiente información:
+		Todo lo relacionado al paquete que tiene asignado para digitar, es decir, puede observar tanto los hogares como los cuestionarios de 
+		dicho paquete, asi como las varibles ingresadas al momento de la recepción del paquete:
+			Paquete:
+				Numero
+				Fecha y tiempo del ingreso
+				Estado
+			Hogar:
+				Numero
+				Numero de cuestionarios dentro del hogar
+				Miembros del hogar
+				Mujeres elegibles del hogar
+				Niños del hogar
+			Cuestionario
+				Numero
+				Tipo
+				Resultado
+				Persona que lo respondio
+	
+		Funciones:
+			Digitar: 
+				Inicia el programa de CSPro para que el digitador inicie o continue con el paquete que tiene asignado.
+				En caso de que el digitador este iniciando un nuevo paquete, crea un archivo para el paquete llamdo de la siguiente forma:
+					PK(No. Paquete)-(Id digitación)* 
+					*Id digitación: 
+						1 - Primera digitación
+						2 - Segunda digitación
+						V - Verificación
+					Ejemplo: 
+						Paquete numero 1 en primera digitación: PK1-1
+						Paquete numero 10 en segunda digitación: PK10-2
+						Paquete numero 18 en verificación: PK18-V
+				
+				Verificaiones:
+					Se realizan algunas verificaciones antes de iniciar la digitación de un paquete:
+						Si el paquete ya se encuentra dentro de la carpta local DICCIONARIO, solamente continua con la digitación, caso 
+						contrario verifica si se encuentra en el servidor de archivos, si se encuentra baja dicho arichivo y continua la
+						digitacion de este, finalmente si el archivo no se encuentra tampoco en el servidor de archivos entonces crea un 
+						nuevo archvivo para el paquete e inicia su digitación.
+			
+			Actualizar:
+				Refresca la infomacion mostrada en esta interfaz consultando la base de datos de información.
+				
+			Enviar:
+				Este metodo es que verfica un paquete cuando el digitador lo haya terminado y este listo para enviarlo al servidor de 
+				archivos. Durante este proceso se realizan una serie de pasos, incluyendo ciertas verificacion que se tienen que cumplir.
+				
+				Verificaciones
+					Conexión con los servidores.
+					Archivo del paquete este creado.
+					Se realizan verificacion tanto para los hogares como los cuestionarios:
+						Hogar:
+							No. de cuestionarios diferente.
+							No. niños diferente.
+							No. mujeres elegibles.
+							No. miembros del hogar.
+						Cuestionario:
+							No linea de persona diferente.
+							Resultado diferente.
+							Tipo de cuestionario diferente.
+							Cuestionario en contenido en hogar incorecto.
+					Si el paquete pasa las verificaciones satisfactoriamente, se procede a:
+						Ingresar la informacion en la base de datos de digitacion.
+						Se obtiene un numero de suma de chequeo que se almacena en la base de datos de informacion para luego poder 
+						utilizarlo en la fase de verificacion.
+						Se realiza el cambio en la base de datos de informacion ya que el paquete cambia de estado.
+				
+			Verificar:
+				Inicia la interfaz para la verificacion de los paquetes.
+				
+			Enviar Observación:
+				Inicia la interfaz para enviar observación sobre inconsistencias.
+				
+			Ayuda/Errores:
+			
+
+VERIFICAR
+	Intefaz mediante la cual se realiza la verficacion del paquetes.
+	Antes de ingresar a esta interfaz se realiza un proceso de verficaciones y comparaciones.
+	Verificaciones:
+		Existencia de los paquetes a verificar: 
+			Se verifica en el servidor de archivos la existencia de los dos archivos del paquete tanto el de la primera digitacion como el
+			de la segunda digitacion.
+		
+		Verificar la integridad de los archivos:
+			Luego de obtener los archivos y bajarlos, estos se verifican mediante la suma de verificación o checksum que se genera en el momento 
+			de realizar esta verificacion y el ingresado en la base de datos cuando el archivo fue terminado de digitar y enviado al servidor de 
+			archivos. Si los valores no son iguales no se procedera a realizar la verificacion.
+	
+	Comparacion:
+		Se realiza una comparación del contenido de ambos archivos y registra las diferencias entre ambas versiones. La cuales muestra en
+		un tabla, dejandole la opcion al digitador poder ingresar el resultado correcto verificandolo fisicamente en el cuestionario.
+	
+	Luego de que se verifica la informacion, es decir, el digitador ingresa los datos correctos en la difencias encontradas, debe abrir
+	CSPro para verificar la integridad del archivo. Luego que este ya no tenga ninguna inconsistencia y haya sido verificado en CSPro
+	ya se puede tenerminar la verficacion. Luego de esto se realiza el mismo proceso que tiene cualquier paquete que haya finializado
+	una digitacion es decir se hacen las misma evaluaciones para dar por terminado la verficación del paquete.
+			
+ENVIAR OBSERVACIÓN
+	Interfaz mediante la cual el digitador puede enviar alguna observacion que tenga sobre alguna pregunta de los cuestionarios.
+	Para poder ingresar debe tener seleccionado el hogar y el cuestionario de cual desea realizar la observacion.
+	Luego ya en la interzar debe de ingresar el numero de la pregunta y una breve descripcion de su observacion, asi como 
+	tambien debe elegir la prioridad que considera tiene dicha observación.
+	
+	Estas observaciones son almacenadas en la base de datos, para su posterior revisión.
+	

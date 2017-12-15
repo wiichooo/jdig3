@@ -1,0 +1,189 @@
+package pruebaxml;
+
+import java_cup.runtime.*;
+
+parser code
+{:    
+	 
+	public void report_error(String message, Object err){  
+		String errorchar = ((Yytoken)(((Symbol)err).value)).val;
+		String errorlinea = ((Yytoken)(((Symbol)err).value)).linea;
+		String errorcol = ((Yytoken)(((Symbol)err).value)).columna;
+		int a = Integer.parseInt(errorlinea)+1;          	  
+		System.out.println("Error Sintactico: " + errorchar
+					+ " en la linea " + errorlinea
+					+ " en la columna " + errorcol);
+	}
+
+        
+        
+:}
+
+action code
+{:
+	String finalXML = "";
+        int valueset = 0;
+        String strvalueset = "";
+        String value = "";
+        int note = 0;
+:}
+
+terminal Yytoken ID, NUM, IGUAL, DOSPUNTOS, DICTIONARY, LEVEL, IDITEMS, ITEMS, VALUESET, RECORD;
+
+non terminal inicio ;
+non terminal String palabra, level, iditems,idcontenido, items, valueset, record, parametros, extra, sig;
+
+start with inicio;
+
+inicio ::= DICTIONARY parametros:val1 sig:val10 {:finalXML = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n <DICTIONARY " + val1 +">" + val10 + "\n</DICTIONARY>";:};
+
+sig ::= sig:val10 level:val2 iditems:val3 record:val4{:RESULT = val10 + val2 + val3 + val4 + "\n\t</LEVEL>\n";:}
+    | level:val2 iditems:val3 record:val4{:RESULT = val2 + val3 + val4 + "\n\t</LEVEL>\n";:};
+
+level ::= LEVEL parametros:val1 {:RESULT = "\n\n\t<LEVEL " + val1 +">\n" ; :};
+
+iditems ::= IDITEMS idcontenido:val1{:RESULT = "\n\t\t<IDITEMS>\n" + val1 + "\n\t\t</IDITEMS>\n"; :};
+
+idcontenido ::= idcontenido:val1 items:val2 valueset:val3{:RESULT = val1 + val2 + val3 + "\n\t\t\t</ITEM>\n"; :}
+				| idcontenido:val8 items:val9 {:RESULT = val8 + val9 + "\n\t\t\t</ITEM>\n"; :}
+				| items:val5 valueset:val7{:RESULT = val5 + val7+ "\n\t\t\t</ITEM>\n"; :}
+				| items:val6{:RESULT = val6 + "\n\t\t\t</ITEM>\n"; :};
+
+items ::= ITEMS parametros:val1 {:RESULT = "\n\t\t\t<ITEM " + val1 +">";:};
+
+valueset ::= valueset:val10 VALUESET {:valueset = 0;:}parametros:val1 {:RESULT = val10 + "\n\t\t\t\t<VALUESET " + val1 + "\n\t\t\t\t</VALUESET>";:}
+             | VALUESET {:valueset = 0;:}parametros:val1 {:RESULT = "\n\t\t\t\t<VALUESET " + val1 + "\n\t\t\t\t</VALUESET>";:};
+
+record ::= record:val10 RECORD parametros:val1 idcontenido:val2 {:RESULT = val10 + "\n\t\t<RECORD " + val1 +">\n"+ val2 + "\n\t\t</RECORD>\n";:}
+         | RECORD parametros:val1 idcontenido:val2 {:RESULT = "\n\t\t<RECORD " + val1 +">\n"+ val2 + "\n\t\t</RECORD>\n";:};
+
+parametros ::= parametros:val3 ID:val1 IGUAL palabra:val2 {://val2 = val2.replace("&apos;","");
+                                    //val2 = val2.replace(String.valueOf(val2.toString().charAt(val2.length()-1)),"");
+                                    if(val1.val.equals("Value") && val2.contains("#sep#")){
+                                    if(valueset == 0){valueset += 1;val3 = val3+ " >";}
+                                    String[] pr = val2.split("#sep#"); 
+                                    RESULT = val3 + "\n\t\t\t\t\t<VALUE Label=\""+pr[1]+"\">"
+					+pr[0]+
+                                    "</VALUE>" ; strvalueset = val2;
+                                    }else
+                                    if(val1.val.equals("Value") && val2.contains(":")){
+                                    if(valueset == 0){valueset += 1;val3 = val3+ " >";}
+                                    String[] pr = val2.split(":");
+                                   // if(pr.length() == 2){
+                                    RESULT = val3 + "\n\t\t\t\t\t<VALUE Label=\"Value\">"
+					+pr[0]+":"+pr[1]+
+                                    "</VALUE>" ;strvalueset = pr[0]+":"+pr[1];
+                                   // }
+                                    }else
+                                    if(val1.val.equals("Value") && val2.trim().equals("")){
+                                    String a = "";
+                                    if(valueset == 0){valueset += 1;a=" >";}
+                                    RESULT = val3 + a + "\n\t\t\t\t\t<VALUE Label=\"Value\">"+val2+"</VALUE>" ;strvalueset = val2;
+                                    }else
+                                    if(valueset == 1 && val2.contains("Special")){
+                                    //valueset -= 1;
+                                        if(strvalueset.contains("#sep#")){
+                                        String[] pr = strvalueset.split("#sep#");
+                                       // RESULT = val3 + "\n\t\t\t\t\t<VALUE Label=\""+pr[1]+"\" Name=\""+val2+"\">"+pr[0]+"</VALUE>";
+                                        val3 = val3.replace("\n\t\t\t\t\t<VALUE Label=\""+pr[1]+"\">"+pr[0]+"</VALUE>", "\n\t\t\t\t\t<VALUE Label=\""+pr[1]+"\" Name=\""+val2+"\">"+pr[0]+"</VALUE>");
+                                        RESULT = val3;
+                                        }else{
+                                        //RESULT = val3 + "\n\t\t\t\t\t<VALUE Label=\"Value\" Name=\""+val2+"\">"+strvalueset+"</VALUE>";
+                                        val3 = val3.replace("\n\t\t\t\t\t<VALUE Label=\"Value\">"+strvalueset+"</VALUE>", "\n\t\t\t\t\t<VALUE Label=\"Value\" Name=\""+val2+"\">"+strvalueset+"</VALUE>");
+                                        RESULT = val3;
+                                        }
+                                        }else
+                                        if(val1.val.equals("Value") && val2.matches("-?\\d+(\\.\\d+)?")){
+                                        String a = "";
+                                        if(valueset == 0){valueset += 1;a=" >";}
+                                        RESULT = val3 + a + "\n\t\t\t\t\t<VALUE Label=\"Value\">"+val2+"</VALUE>" ;strvalueset = val2;
+                                    }else
+                                    if(valueset == 1 && val1.val.contains("Note")){
+                                    //valueset -= 1;
+                                        if(strvalueset.contains("#sep#")){
+                                        String[] pr = strvalueset.split("#sep#");
+                                       // RESULT = val3 + "\n\t\t\t\t\t<VALUE Label=\""+pr[1]+"\" Name=\""+val2+"\">"+pr[0]+"</VALUE>";
+                                        val3 = val3.replace("\n\t\t\t\t\t<VALUE Label=\""+pr[1]+"\">"+pr[0]+"</VALUE>", "\n\t\t\t\t\t<VALUE Label=\""+pr[1]+"\" Note=\""+val2+"\">"+pr[0]+"</VALUE>");
+                                        RESULT = val3;
+                                        }else{
+                                        //RESULT = val3 + "\n\t\t\t\t\t<VALUE Label=\"Value\" Name=\""+val2+"\">"+strvalueset+"</VALUE>";
+                                        val3 = val3.replace("\n\t\t\t\t\t<VALUE Label=\"Value\">"+strvalueset+"</VALUE>", "\n\t\t\t\t\t<VALUE Label=\"Value\" Note=\""+val2+"\">"+strvalueset+"</VALUE>");
+                                        RESULT = val3;
+                                        }
+                                        }else
+                                        if(val1.val.equals("Value") && val2.matches("-?\\d+(\\.\\d+)?")){
+                                        String a = "";
+                                        if(valueset == 0){valueset += 1;a=" >";}
+                                        RESULT = val3 + a + "\n\t\t\t\t\t<VALUE Label=\"Value\">"+val2+"</VALUE>" ;strvalueset = val2;
+                                    }else{
+                                    val2 = val2.replace("&apos;","");
+                                     if(val1.val.equals("Value") && val2.trim().equals("")){
+                                    String a = "";
+                                    if(valueset == 0){valueset += 1;a=" >";}
+                                    RESULT = val3 + a + "\n\t\t\t\t\t<VALUE Label=\"Value\">"+"&apos;"+val2+"&apos;"+"</VALUE>" ;strvalueset = val2;
+                                    }
+                                    else
+                                    RESULT = val3 + val1.val + "=\"" + val2 +"\" "; 
+                                    } :}
+                                    
+                                  //  if(valueset == 0 && val1.val.contains("Note")){RESULT = val3 + "\n";}
+                                    
+			| ID:val3 IGUAL palabra:val4{://val4 = val4.replace("'","");
+                                    //val4 = val4.replace(String.valueOf(val4.toString().charAt(val4.length()-1)),"");
+                                    if(val3.val.equals("Value") && val4.contains("#sep#")){
+                                    String a = "";
+                                    if(valueset == 0){valueset += 1;a=" >";}
+                                    String[] pr = val4.split("#sep#"); 
+                                    RESULT = a + "\n\t\t\t\t\t<VALUE Label=\""+pr[1]+"\">"
+					+pr[0]+
+                                    "</VALUE" ;strvalueset = val4;
+                                    }else
+                                    if(val3.val.equals("Value") && val4.contains(":")){
+                                    String a = "";
+                                    if(valueset == 0){valueset += 1;a=" >";}
+                                    String[] pr = val4.split(":");
+                                  //  if(pr.length() == 2){
+                                    RESULT = a + "\n\t\t\t\t\t<VALUE Label=\"Value\">"
+					+pr[0]+":"+pr[1]+
+                                    "</VALUE>" ;strvalueset = pr[0]+":"+pr[1];
+                                   // }
+                                    }else
+                                    if(val3.val.equals("Value") && val4.trim().equals("")){
+                                    String a = "";
+                                    if(valueset == 0){valueset += 1;a=" >";}
+                                    RESULT = a + "\n\t\t\t\t\t<VALUE Label=\"Value\">"+val4+"</VALUE>" ;strvalueset = val4;
+                                    }else
+                                    if(valueset == 1 && val4.contains("Special")){
+                                    //valueset -= 1;
+                                        if(strvalueset.contains("#sep#")){
+                                        String[] pr = strvalueset.split("#sep#");
+                                        RESULT = "\n\t\t\t\t\t<VALUE Label=\"+pr[1]+\" Name=\""+val4+"\">"+pr[0]+"</VALUE>";
+                                        }else
+                                        RESULT = "\n\t\t\t\t\t<VALUE Label=\"Value\" Name=\""+val4+"\">"+strvalueset+"</VALUE>";
+                                        }else
+                                        if(val3.val.equals("Value") && val4.matches("-?\\d+(\\.\\d+)?")){
+                                        String a = "";
+                                        if(valueset == 0){valueset += 1;a=" >";}
+                                        RESULT = a + "\n\t\t\t\t\t<VALUE Label=\"Value\">"+val4+"</VALUE>" ;strvalueset = val4;
+                                    }else{
+                                    val4 = val4.replace("&apos;","");
+                                     if(val3.val.equals("Value") && val4.trim().equals("")){
+                                    String a = "";
+                                    if(valueset == 0){valueset += 1;a=" >";}
+                                    RESULT = a + "\n\t\t\t\t\t<VALUE Label=\"Value\">"+"&apos;"+val4+"&apos;"+"</VALUE>" ;strvalueset = val4;
+                                    }
+                                    else
+                                    RESULT = val3.val + "=\"" + val4 +"\" "; }
+                                    :};
+                                    
+                                          
+                                   // if(valueset == 0 && val3.val.contains("Note")){RESULT = "\n";}
+                                    
+
+
+palabra ::=    ID:val1 extra:val2{: RESULT = val1.val + val2; :}
+			| NUM:val2 DOSPUNTOS NUM:val3 {: RESULT = val2.val + ":" + val3.val; :}
+			| NUM:val6{:RESULT=val6.val; :};
+			
+extra ::= IGUAL ID:val1 extra:val10 {: RESULT = "= " + val1.val + val10; :}
+        |{: RESULT = ""; :};
